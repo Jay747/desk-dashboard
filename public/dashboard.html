@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Zoho Desk Live Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f9f9f9; }
+    h1, h2 { margin-top: 0; }
+    .kpi { font-size: 2rem; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { padding: 0.5rem; border: 1px solid #ccc; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>📊 Zoho Desk Dashboard</h1>
+
+  <div class="kpi">
+    🟦 Open Tickets: <span id="openCount">...</span>
+  </div>
+
+  <h2>🛑 High Priority Open Tickets</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Subject</th>
+        <th>Contact</th>
+        <th>Created Time</th>
+      </tr>
+    </thead>
+    <tbody id="ticketTable"></tbody>
+  </table>
+
+  <script>
+    const TOKEN_SERVER_URL = "https://zoho-token-server.onrender.com/token";
+
+    async function getToken() {
+      const res = await fetch(TOKEN_SERVER_URL);
+      const token = await res.text();
+      return `Zoho-oauthtoken ${token}`;
+    }
+
+    async function loadDashboard() {
+      try {
+        const token = await getToken();
+
+        // 1. Get all open tickets
+        const ticketsRes = await fetch("https://desk.zoho.com/api/v1/tickets?status=open", {
+          headers: { Authorization: token }
+        });
+        const ticketsData = await ticketsRes.json();
+        document.getElementById("openCount").innerText = ticketsData.data.length;
+
+        // 2. Get high priority open tickets
+        const highRes = await fetch("https://desk.zoho.com/api/v1/tickets?priority=high&status=open&limit=5", {
+          headers: { Authorization: token }
+        });
+        const highData = await highRes.json();
+
+        const tableBody = document.getElementById("ticketTable");
+        tableBody.innerHTML = "";
+        highData.data.forEach(ticket => {
+          const row = `<tr>
+            <td>${ticket.subject}</td>
+            <td>${ticket.contact?.name || "N/A"}</td>
+            <td>${new Date(ticket.createdTime).toLocaleString()}</td>
+          </tr>`;
+          tableBody.innerHTML += row;
+        });
+
+      } catch (error) {
+        console.error("Error loading dashboard:", error);
+        document.getElementById("openCount").innerText = "Error";
+      }
+    }
+
+    // Load immediately and every 5 seconds
+    loadDashboard();
+    setInterval(loadDashboard, 5000);
+  </script>
+</body>
+</html>
