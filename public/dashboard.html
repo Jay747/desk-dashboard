@@ -130,17 +130,22 @@
 
         // Create chart
         const ctx = document.getElementById('statusChart').getContext('2d');
-        if (window.statusChart) window.statusChart.destroy(); // Prevent duplicate charts
-        window.statusChart = new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: Object.keys(statusMap),
-            datasets: [{
-              label: "Tickets by Status",
-              data: Object.values(statusMap),
-            }]
-          }
-        });
+
+if (window.statusChart && typeof window.statusChart.destroy === "function") {
+  window.statusChart.destroy(); // ✅ safely destroy only if it's a real chart
+}
+
+window.statusChart = new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(statusMap),
+    datasets: [{
+      label: "Tickets by Status",
+      data: Object.values(statusMap),
+    }]
+  }
+});
+
 
       } catch (err) {
         console.error("Dashboard load error:", err);
